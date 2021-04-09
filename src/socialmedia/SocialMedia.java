@@ -5,6 +5,7 @@ import java.util.ArrayList;
 
 public class SocialMedia implements SocialMediaPlatform {
     ArrayList<Account> accounts = new ArrayList<>();
+	ArrayList<Post> posts = new ArrayList<>();
 
     public Boolean checkHandleFormat(String handle) {
 		Boolean correctFormat;
@@ -29,11 +30,17 @@ public class SocialMedia implements SocialMediaPlatform {
 		return exists;
     }
 
+
 	public int generateUniqueID() {
 		int id = 1;
 		for (int i = 0 ; i < accounts.size() ; i++) {
 			if (accounts.get(i).getAccountID() == id) {
 				id++;
+			}
+			for (int k = 0 ; k < posts.size() ; k++) {
+				if (posts.get(k).getPostID() == id) {
+					id++;
+				}
 			}
 		}
 		return id;
@@ -119,18 +126,61 @@ public class SocialMedia implements SocialMediaPlatform {
 	}
 
 	public void updateAccountDescription(String handle, String description) throws HandleNotRecognisedException {
-		// TODO Auto-generated method stub
-
+		Boolean foundAccount = false;
+		for (int i = 0 ; i < accounts.size() ; i++) {
+			if (accounts.get(i).getAccountHandle().equals(handle)) {
+				foundAccount = true;
+				accounts.get(i).setAccountDescription(description);
+			}
+		}
+		if (foundAccount.equals(Boolean.FALSE)) {
+			throw new HandleNotRecognisedException();
+		}
 	}
 
 	public String showAccount(String handle) throws HandleNotRecognisedException {
-		// TODO Auto-generated method stub
+		Boolean foundAccount = false;
+
+		for (int i = 0 ; i < accounts.size() ; i++) {
+			if (accounts.get(i).getAccountHandle().equals(handle)) {
+				foundAccount = true;
+				int ID = accounts.get(i).getAccountID();
+				String returnHandle = accounts.get(i).getAccountHandle();
+				String description = accounts.get(i).getAccountDescription();
+				return "ID: " + ID + "\nHandle: " + returnHandle + "\nDescription: " + description;
+			}
+		}
+		if (foundAccount.equals(Boolean.FALSE)) {
+			throw new HandleNotRecognisedException();
+		}
 		return null;
 	}
 
+	public Boolean checkPostMessage(String message) {
+		Boolean validPostMessage;
+		if (message.length() > 100 || message.length() == 0) {
+			validPostMessage = false;
+		}
+		else {
+			validPostMessage = true;
+		}
+		return validPostMessage;
+	}
+
 	public int createPost(String handle, String message) throws HandleNotRecognisedException, InvalidPostException {
-		// TODO Auto-generated method stub
-		return 0;
+		Boolean foundAccount = false;
+
+		for (int i = 0 ; i < accounts.size() ; i++) {
+			if (accounts.get(i).getAccountHandle().equals(handle) && checkPostMessage(message).equals(Boolean.TRUE)) {
+				foundAccount = true;
+				posts.add(new Post(handle, message));
+				posts.get(posts.size()-1).setPostID(generateUniqueID());
+			}
+		}
+		if (foundAccount.equals(Boolean.FALSE)) {
+			throw new HandleNotRecognisedException();
+		}
+		return posts.get(posts.size()-1).getPostID();
 	}
 
 	public int endorsePost(String handle, int id)
