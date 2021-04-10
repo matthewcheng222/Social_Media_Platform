@@ -14,7 +14,7 @@ public class Account{
     public void setAccountHandle(String handle) {
         this.handle = handle;
     }
-    
+
     public void setAccountDescription(String description) {
         this.description = description;
     }
