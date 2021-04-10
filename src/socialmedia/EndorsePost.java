@@ -21,6 +21,10 @@ public class EndorsePost {
         this.reference = reference;
     }
 
+    public void setOriginalPostID(int id) {
+        this.id = id;
+    }
+
     public int getOriginalPostID() {
         return id;
     }
