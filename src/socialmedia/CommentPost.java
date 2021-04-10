@@ -18,6 +18,10 @@ public class CommentPost {
         this.commentPostID = commentPostID;
     }
 
+    public void setOriginalPostID(int id) {
+        this.id = id;
+    }
+
     public int getOriginalPostID() {
         return id;
     }
@@ -29,7 +33,7 @@ public class CommentPost {
     public int getCommentPostID() {
         return commentPostID;
     }
-  
+    
     public String getCommentPostMessage() {
         return message;
     }
