@@ -2,6 +2,7 @@ package socialmedia;
 
 import java.io.IOException;
 import java.io.Serializable;
+import java.util.ArrayList;
 
 /**
  * MiniSocialMediaPlatform interface. The no-argument constructor of a class
@@ -14,7 +15,12 @@ import java.io.Serializable;
  *
  */
 public interface MiniSocialMediaPlatform extends Serializable {
-
+	ArrayList<Account> accounts = new ArrayList<>();
+	ArrayList<Post> posts = new ArrayList<>();
+	ArrayList<EndorsePost> endorsePosts = new ArrayList<>();
+	ArrayList<CommentPost> commentPosts = new ArrayList<>();
+	ArrayList<DeletedPost> deletedPosts = new ArrayList<>();
+	
 	// Account-related methods ****************************************
 
 	/**
