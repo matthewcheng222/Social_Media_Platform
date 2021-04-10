@@ -12,4 +12,20 @@ public class Post {
     }
 
     // Public getters and setters
+    public void setPostID(int id) {
+        this.id = id;
+    }
+
+    public String getPostHandle(){
+        return handle;
+    }
+    
+    public String getPostMessage(){
+        return message;
+    }
+
+    public int getPostID() {
+        return id;
+    }
 }
+
