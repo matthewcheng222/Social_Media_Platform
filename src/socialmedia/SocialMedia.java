@@ -1,15 +1,12 @@
 package socialmedia;
 
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 
 public class SocialMedia implements SocialMediaPlatform {
-    ArrayList<Account> accounts = new ArrayList<>();
-	ArrayList<Post> posts = new ArrayList<>();
-	ArrayList<EndorsePost> endorsePosts = new ArrayList<>();
-	ArrayList<CommentPost> commentPosts = new ArrayList<>();
-	ArrayList<DeletedPost> deletedPosts = new ArrayList<>();
-
     public Boolean checkHandleFormat(String handle) {
 		Boolean correctFormat;
         if (handle.length() > 30 || handle.contains(" ")) {
@@ -31,8 +28,7 @@ public class SocialMedia implements SocialMediaPlatform {
             }
         }
 		return exists;
-    }
-
+	}
 
 	public int generateUniqueID() {
 		int id = 1;
@@ -186,22 +182,17 @@ public class SocialMedia implements SocialMediaPlatform {
 	}
 
 	public String showAccount(String handle) throws HandleNotRecognisedException {
-		Boolean foundAccount = false;
-
 		for (int i = 0 ; i < accounts.size() ; i++) {
 			if (accounts.get(i).getAccountHandle().equals(handle)) {
-				foundAccount = true;
-				int ID = accounts.get(i).getAccountID();
+				int id = accounts.get(i).getAccountID();
 				String returnHandle = accounts.get(i).getAccountHandle();
 				String description = accounts.get(i).getAccountDescription();
-				return "ID: " + ID + "\nHandle: " + returnHandle + "\nDescription: " + description + "\nPost count: " + getAccountTotalPostCount(handle) + "\nEndorse count: ";
+				return "ID: " + id + "\nHandle: " + returnHandle + "\nDescription: " 
+				+ description + "\nPost count: " + getAccountTotalPostCount(handle) 
+				+ "\nEndorse count: ";
 			}
-			
 		}
-		if (foundAccount.equals(Boolean.FALSE)) {
-			throw new HandleNotRecognisedException();
-		}
-		return null;
+		throw new HandleNotRecognisedException();
 	}
 
 	public Boolean checkPostMessage(String message) {
@@ -215,7 +206,7 @@ public class SocialMedia implements SocialMediaPlatform {
 		return validPostMessage;
 	}
 
-	public Boolean checkPostIDOriginal(int id) {
+	public Boolean checkPostID(int id) {
 		for (int i = 0 ; i < posts.size() ; i++) {
 			if (posts.get(i).getPostID() == id) {
 				return true;
@@ -228,7 +219,7 @@ public class SocialMedia implements SocialMediaPlatform {
 		}
 		for (int k = 0 ; k < commentPosts.size() ; k++) {
 			if (commentPosts.get(k).getCommentPostID() == id) {
-				break;
+				return true;
 			}
 		}
 		return false;
@@ -264,11 +255,21 @@ public class SocialMedia implements SocialMediaPlatform {
 						endorsePosts.add(new EndorsePost(handle, id));
 						endorsePosts.get(endorsePosts.size()-1).setEndorsePostID(generateUniqueID());
 						endorsePosts.get(endorsePosts.size()-1).setEndorsePostReference("EP@" + handle + ": " + posts.get(k).getPostMessage());
+						return endorsePosts.get(endorsePosts.size()-1).getEndorsePostID();
+					}
+				}
+				for (int k = 0 ; k < commentPosts.size() ; k++) {
+					if (commentPosts.get(k).getCommentPostID() == id) {
+						foundPost = true;
+						endorsePosts.add(new EndorsePost(handle, id));
+						endorsePosts.get(endorsePosts.size()-1).setEndorsePostID(generateUniqueID());
+						endorsePosts.get(endorsePosts.size()-1).setEndorsePostReference("EP@" + handle + ": " + commentPosts.get(k).getCommentPostMessage());
+						return endorsePosts.get(endorsePosts.size()-1).getEndorsePostID();
 					}
 				}
 			}
 		}
-		if (checkPostIDOriginal(id).equals(Boolean.FALSE)) {
+		if (checkPostID(id).equals(Boolean.FALSE)) {
 			throw new NotActionablePostException();
 		}
 		if (foundAccount.equals(Boolean.FALSE)) {
@@ -276,8 +277,8 @@ public class SocialMedia implements SocialMediaPlatform {
 		}
 		if (foundPost.equals(Boolean.FALSE)) {
 			throw new HandleNotRecognisedException();
-		}	
-		return endorsePosts.get(endorsePosts.size()-1).getEndorsePostID();
+		}
+		return 0;
 	}
 
 	public int commentPost(String handle, int id, String message) throws HandleNotRecognisedException,
@@ -295,9 +296,16 @@ public class SocialMedia implements SocialMediaPlatform {
 								commentPosts.get(commentPosts.size()-1).setCommentPostID(generateUniqueID());
 							}
 						}
+						for (int k = 0 ; k < commentPosts.size() ; k++) {
+							if (commentPosts.get(k).getCommentPostID() == id && checkPostMessage(message).equals(Boolean.TRUE)) {
+								foundPost = true;
+								commentPosts.add(new CommentPost(handle, id, message));
+								commentPosts.get(commentPosts.size()-1).setCommentPostID(generateUniqueID());
+							}
+						}
 					}
 				}
-				if (checkPostIDOriginal(id).equals(Boolean.FALSE)) {
+				if (checkPostID(id).equals(Boolean.FALSE)) {
 					throw new NotActionablePostException();
 				}
 				if (foundAccount.equals(Boolean.FALSE)) {
@@ -313,11 +321,51 @@ public class SocialMedia implements SocialMediaPlatform {
 	}
 
 	public void deletePost(int id) throws PostIDNotRecognisedException {
-		if (deletedPosts.size() > 0) {
-
-		}
-		else {
+		if (deletedPosts.isEmpty()) {
 			deletedPosts.add(new DeletedPost(-1, "The original content was removed from the system and is no longer available."));
+		}
+		for (int i = 0 ; i < posts.size() ; i++) {
+			if (posts.get(i).getPostID() == id) {
+				for (int j = 0 ; j < endorsePosts.size() ; j++) {
+					if (endorsePosts.get(j).getOriginalPostID() == id) {
+						endorsePosts.remove(j);
+					}
+				}
+				for (int k = 0 ; k < commentPosts.size() ; k++) {
+					if (commentPosts.get(k).getOriginalPostID() == id) {
+						commentPosts.get(k).setOriginalPostID(-1);
+					}
+				}
+				posts.remove(i);
+				break;
+			}
+		}
+		for (int a = 0 ; a < endorsePosts.size() ; a++) {
+			if (endorsePosts.get(a).getEndorsePostID() == id) {
+				for (int k = 0 ; k < commentPosts.size() ; k++) {
+					if (commentPosts.get(k).getOriginalPostID() == id) {
+						commentPosts.get(k).setOriginalPostID(-1);
+					}
+				}
+				endorsePosts.remove(a);
+				break;
+			}
+		}
+		for (int z = 0 ; z < commentPosts.size() ; z++) {
+			if (commentPosts.get(z).getCommentPostID() == id) {
+				for (int j = 0 ; j < endorsePosts.size() ; j++) {
+					if (endorsePosts.get(j).getOriginalPostID() == id) {
+						endorsePosts.remove(j);
+					}
+				}
+				for (int k = 0 ; k < commentPosts.size() ; k++) {
+					if (commentPosts.get(k).getOriginalPostID() == id) {
+						commentPosts.get(k).setOriginalPostID(-1);
+					}
+				}
+				commentPosts.remove(z);
+				break;
+			}
 		}
 	}
 
@@ -342,25 +390,58 @@ public class SocialMedia implements SocialMediaPlatform {
 	}
 
 	public String showIndividualPost(int id) throws PostIDNotRecognisedException {
-		Boolean foundPost = false;
 		for (int i = 0 ; i < posts.size() ; i++) {
 			if (posts.get(i).getPostID() == id) {
-				foundPost = true;
 				return "ID: " + posts.get(i).getPostID() + "\nAccount: " + posts.get(i).getPostHandle() 
 				+ "\nNo. endorsements: " + findNumberOfEndorsements(id) + " | No. comments: " 
 				+ findNumberOfComments(id) + "\n" + posts.get(i).getPostMessage();
 			}
 		}
-		if (foundPost.equals(Boolean.FALSE)) {
-			throw new PostIDNotRecognisedException();
+		for (int j = 0 ; j < commentPosts.size() ; j++) {
+			if (commentPosts.get(j).getCommentPostID() == id) {
+				return "ID: " + commentPosts.get(j).getCommentPostID() + "\nAccount: " 
+				+ commentPosts.get(j).getCommentPostHandle() + "\nNo. endorsements: " 
+				+ findNumberOfEndorsements(id) + " | No. comments: " 
+				+ findNumberOfComments(id) + "\n" + commentPosts.get(j).getCommentPostMessage();
+			}
 		}
-		return null;
+		throw new PostIDNotRecognisedException();
 	}
 
 	public StringBuilder showPostChildrenDetails(int id)
 			throws PostIDNotRecognisedException, NotActionablePostException {
-		// TODO Auto-generated method stub
-		return null;
+		StringBuilder sb = new StringBuilder();
+		for (int i = 0 ; i < posts.size() ; i++) {
+			if (posts.get(i).getPostID() == id) {
+				sb.append("ID: " + posts.get(i).getPostID());
+				sb.append("\nAccount: " + posts.get(i).getPostHandle());
+				sb.append("\nNo. endorsements: " + findNumberOfEndorsements(id) + " | No. comments: " + findNumberOfComments(id));
+				sb.append("\n" + posts.get(i).getPostMessage());
+				sb.append("\n|");
+				for (int j = 0 ; j < commentPosts.size() ; j++) {
+					if (commentPosts.get(j).getOriginalPostID() == id) {
+						sb.append("\n| > ID: " + commentPosts.get(j).getCommentPostID());
+						sb.append("\n    Account: " + commentPosts.get(j).getCommentPostHandle());
+						sb.append("\n    No. endorsements: " + findNumberOfEndorsements(commentPosts.get(j).getCommentPostID()) 
+						+ " | No. comments: " + findNumberOfComments(commentPosts.get(j).getCommentPostID()));
+						sb.append("\n    " + commentPosts.get(j).getCommentPostMessage());
+
+						for (int k = 0 ; k < commentPosts.size() ; k++) {
+							if (commentPosts.get(k).getOriginalPostID() == commentPosts.get(j).getCommentPostID()) {
+								sb.append("\n    |");
+								sb.append("\n    | > ID: " + commentPosts.get(k).getCommentPostID());
+								sb.append("\n        Account: " + commentPosts.get(k).getCommentPostHandle());
+								sb.append("\n        No. endorsements: " + findNumberOfEndorsements(commentPosts.get(k).getCommentPostID()) 
+								+ " | No. comments: " + findNumberOfComments(commentPosts.get(k).getCommentPostID()));
+								sb.append("\n        " + commentPosts.get(k).getCommentPostMessage());
+							}
+						}
+					}
+				}
+				return sb;
+			}
+		}
+		throw new PostIDNotRecognisedException();
 	}
 
 	public int getNumberOfAccounts() {
@@ -376,33 +457,92 @@ public class SocialMedia implements SocialMediaPlatform {
 	}
 
 	public int getTotalCommentPosts() {
-		// TODO Auto-generated method stub
-		return 0;
+		return commentPosts.size();
 	}
 
 	public int getMostEndorsedPost() {
-		// TODO Auto-generated method stub
-		return 0;
+		int tempCount;
+		int count = 0;
+		int temp = 0;
+		int mostEndorsedPostID = endorsePosts.get(0).getOriginalPostID();
+		for (int i = 0 ; i < endorsePosts.size()-1 ; i++) {
+			temp = endorsePosts.get(i).getOriginalPostID();
+			tempCount = 0;
+			for (int j = 0 ; j < endorsePosts.size() ; j++) {
+				if (temp == endorsePosts.get(j).getOriginalPostID()) {
+					tempCount++;
+				}
+				if (tempCount > count) {
+					mostEndorsedPostID = temp;
+					count = tempCount;
+				}
+			}
+		}
+		return mostEndorsedPostID;
 	}
 
+	public int accountHandleToID(String handle) throws HandleNotRecognisedException {
+		for (int i = 0 ; i < accounts.size() ; i++) {
+			if (accounts.get(i).getAccountHandle().equals(handle)) {
+				return accounts.get(i).getAccountID();
+			}
+		}
+		throw new HandleNotRecognisedException();
+	}
+
+	public String postIDToHandle(int postID) throws AccountIDNotRecognisedException {
+		for (int i = 0 ; i < posts.size() ; i++) {
+			if (posts.get(i).getPostID() == postID) {
+				return posts.get(i).getPostHandle();
+			}
+		}
+	
+		for (int j = 0 ; j < commentPosts.size() ; j++) {
+			if (commentPosts.get(j).getOriginalPostID() == postID) {
+				return commentPosts.get(j).getCommentPostHandle();
+			}
+		}
+		throw new AccountIDNotRecognisedException();
+	}
+	
+
 	public int getMostEndorsedAccount() {
-		// TODO Auto-generated method stub
-		return 0;
+
 	}
 
 	public void erasePlatform() {
-		// TODO Auto-generated method stub
-
+		posts.clear();
+		endorsePosts.clear();
+		commentPosts.clear();
+		deletedPosts.clear();
+		accounts.clear();
 	}
 
 	public void savePlatform(String filename) throws IOException {
-		// TODO Auto-generated method stub
-
+		try (FileOutputStream fos = new FileOutputStream(filename)) {
+			ObjectOutputStream oos = new ObjectOutputStream(fos);
+			oos.writeObject(posts);
+			oos.writeObject(endorsePosts);
+			oos.writeObject(commentPosts);
+			oos.writeObject(deletedPosts);
+			oos.writeObject(accounts);
+			oos.close();
+		} 
+		catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
 
 	public void loadPlatform(String filename) throws IOException, ClassNotFoundException {
-		// TODO Auto-generated method stub
-
+		try (FileInputStream fis = new FileInputStream(filename)) {
+			ObjectInputStream ois = new ObjectInputStream(fis);
+		}
+		catch (IOException e) {
+			e.printStackTrace();
+		}
+		catch (ClassNotFoundException e) {
+			e.printStackTrace();
+		}
 	}
 }
 
