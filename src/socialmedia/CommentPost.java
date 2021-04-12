@@ -1,6 +1,6 @@
 package socialmedia;
 
-public class CommentPost {
+public class CommentPost extends SocialMedia {
     // Private instance variables
     String handle;
     int id;

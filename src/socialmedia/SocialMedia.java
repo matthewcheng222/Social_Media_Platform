@@ -5,6 +5,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.ArrayList;
 
 public class SocialMedia implements SocialMediaPlatform {
     public Boolean checkHandleFormat(String handle) {
@@ -20,7 +21,6 @@ public class SocialMedia implements SocialMediaPlatform {
 
     public Boolean checkHandleExists(String handle) {
 		Boolean exists = false;
-		
         for (int i = 0 ; i < accounts.size() ; i++) {
             if (accounts.get(i).getAccountHandle().equals(handle)) {
                 exists = true;
@@ -184,12 +184,13 @@ public class SocialMedia implements SocialMediaPlatform {
 	public String showAccount(String handle) throws HandleNotRecognisedException {
 		for (int i = 0 ; i < accounts.size() ; i++) {
 			if (accounts.get(i).getAccountHandle().equals(handle)) {
+				endorsedAccountCount();
 				int id = accounts.get(i).getAccountID();
 				String returnHandle = accounts.get(i).getAccountHandle();
 				String description = accounts.get(i).getAccountDescription();
 				return "ID: " + id + "\nHandle: " + returnHandle + "\nDescription: " 
 				+ description + "\nPost count: " + getAccountTotalPostCount(handle) 
-				+ "\nEndorse count: ";
+				+ "\nEndorse count: " + accounts.get(i).getEndorsedPostCount();
 			}
 		}
 		throw new HandleNotRecognisedException();
@@ -244,14 +245,12 @@ public class SocialMedia implements SocialMediaPlatform {
 	public int endorsePost(String handle, int id)
 			throws HandleNotRecognisedException, PostIDNotRecognisedException, NotActionablePostException {
 		Boolean foundAccount = false;
-		Boolean foundPost = false;
 
 		for (int i = 0 ; i < accounts.size() ; i++) {
 			if (accounts.get(i).getAccountHandle().equals(handle)) {
 				foundAccount = true;
 				for (int k = 0 ; k < posts.size() ; k++) {
 					if (posts.get(k).getPostID() == id) {
-						foundPost = true;
 						endorsePosts.add(new EndorsePost(handle, id));
 						endorsePosts.get(endorsePosts.size()-1).setEndorsePostID(generateUniqueID());
 						endorsePosts.get(endorsePosts.size()-1).setEndorsePostReference("EP@" + handle + ": " + posts.get(k).getPostMessage());
@@ -260,7 +259,6 @@ public class SocialMedia implements SocialMediaPlatform {
 				}
 				for (int k = 0 ; k < commentPosts.size() ; k++) {
 					if (commentPosts.get(k).getCommentPostID() == id) {
-						foundPost = true;
 						endorsePosts.add(new EndorsePost(handle, id));
 						endorsePosts.get(endorsePosts.size()-1).setEndorsePostID(generateUniqueID());
 						endorsePosts.get(endorsePosts.size()-1).setEndorsePostReference("EP@" + handle + ": " + commentPosts.get(k).getCommentPostMessage());
@@ -275,10 +273,7 @@ public class SocialMedia implements SocialMediaPlatform {
 		if (foundAccount.equals(Boolean.FALSE)) {
 			throw new HandleNotRecognisedException();
 		}
-		if (foundPost.equals(Boolean.FALSE)) {
-			throw new HandleNotRecognisedException();
-		}
-		return 0;
+		throw new HandleNotRecognisedException();
 	}
 
 	public int commentPost(String handle, int id, String message) throws HandleNotRecognisedException,
@@ -480,34 +475,34 @@ public class SocialMedia implements SocialMediaPlatform {
 		}
 		return mostEndorsedPostID;
 	}
-
-	public int accountHandleToID(String handle) throws HandleNotRecognisedException {
+	
+	public void endorsedAccountCount() {
 		for (int i = 0 ; i < accounts.size() ; i++) {
-			if (accounts.get(i).getAccountHandle().equals(handle)) {
-				return accounts.get(i).getAccountID();
+			int count = 0;
+			for (int j = 0 ; j < endorsePosts.size() ; j++) {
+				for (int k = 0 ; k < posts.size() ; k++) {
+					if (endorsePosts.get(j).getOriginalPostID() == posts.get(k).getPostID()) {
+						String tempHandle = posts.get(k).getPostHandle();
+						if (accounts.get(k).getAccountHandle().equals(tempHandle)) {
+							count++;
+						}
+					}
+				}
 			}
+			accounts.get(i).setEndorsedPostCount(count);
 		}
-		throw new HandleNotRecognisedException();
 	}
-
-	public String postIDToHandle(int postID) throws AccountIDNotRecognisedException {
-		for (int i = 0 ; i < posts.size() ; i++) {
-			if (posts.get(i).getPostID() == postID) {
-				return posts.get(i).getPostHandle();
-			}
-		}
-	
-		for (int j = 0 ; j < commentPosts.size() ; j++) {
-			if (commentPosts.get(j).getOriginalPostID() == postID) {
-				return commentPosts.get(j).getCommentPostHandle();
-			}
-		}
-		throw new AccountIDNotRecognisedException();
-	}
-	
 
 	public int getMostEndorsedAccount() {
-
+		int mostEndorsedAccountCount = 0;
+		int mostEndorsedAccountID = accounts.get(0).getAccountID();
+		endorsedAccountCount();
+		for (int i = 0 ; i < accounts.size() ; i++) {
+			if (accounts.get(i).getEndorsedPostCount() > mostEndorsedAccountCount) {
+				mostEndorsedAccountID = accounts.get(i).getAccountID();
+			}
+		}
+		return mostEndorsedAccountID;
 	}
 
 	public void erasePlatform() {
@@ -518,14 +513,15 @@ public class SocialMedia implements SocialMediaPlatform {
 		accounts.clear();
 	}
 
-	public void savePlatform(String filename) throws IOException {
+	public void savePlatform(String filename) throws IOException { 
 		try (FileOutputStream fos = new FileOutputStream(filename)) {
 			ObjectOutputStream oos = new ObjectOutputStream(fos);
-			oos.writeObject(posts);
-			oos.writeObject(endorsePosts);
-			oos.writeObject(commentPosts);
-			oos.writeObject(deletedPosts);
-			oos.writeObject(accounts);
+			toSerialize.add(posts);
+			toSerialize.add(endorsePosts);
+			toSerialize.add(commentPosts);
+			toSerialize.add(deletedPosts);
+			toSerialize.add(accounts);
+			oos.writeObject(toSerialize);
 			oos.close();
 		} 
 		catch (IOException e) {
@@ -533,16 +529,39 @@ public class SocialMedia implements SocialMediaPlatform {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public void loadPlatform(String filename) throws IOException, ClassNotFoundException {
+		ArrayList<Object> toDeserialize = new ArrayList<>();
 		try (FileInputStream fis = new FileInputStream(filename)) {
 			ObjectInputStream ois = new ObjectInputStream(fis);
+			toDeserialize = (ArrayList<Object>) ois.readObject();
+			ois.close();
 		}
-		catch (IOException e) {
+		catch (IOException | ClassNotFoundException e) {
 			e.printStackTrace();
 		}
-		catch (ClassNotFoundException e) {
-			e.printStackTrace();
+
+		erasePlatform();
+		ArrayList<Post> deserializedPosts = (ArrayList<Post>) toDeserialize.get(0);
+		ArrayList<EndorsePost> deserializedEndorsePost = (ArrayList<EndorsePost>) toDeserialize.get(1);
+		ArrayList<CommentPost> deserializedCommentPost = (ArrayList<CommentPost>) toDeserialize.get(2);
+		ArrayList<DeletedPost> deserializedDeletedPost = (ArrayList<DeletedPost>) toDeserialize.get(3);
+		ArrayList<Account> deserializedAccount = (ArrayList<Account>) toDeserialize.get(4);
+
+		for (int i = 0 ; i < deserializedPosts.size() ; i++) {
+			posts.add(deserializedPosts.get(i));
+		}
+		for (int j = 0 ; j < deserializedEndorsePost.size() ; j++) {
+			endorsePosts.add(deserializedEndorsePost.get(j));
+		}
+		for (int k = 0 ; k < deserializedCommentPost.size() ; k++) {
+			commentPosts.add(deserializedCommentPost.get(k));
+		}
+		for (int l = 0 ; l < deserializedDeletedPost.size() ; l++) {
+			deletedPosts.add(deserializedDeletedPost.get(l));
+		}
+		for (int m = 0 ; m < deserializedAccount.size() ; m++) {
+			accounts.add(deserializedAccount.get(m));
 		}
 	}
 }
-

@@ -1,6 +1,6 @@
 package socialmedia;
 
-public class DeletedPost {
+public class DeletedPost extends SocialMedia {
     // Private instance variables
     int id;
     String message;

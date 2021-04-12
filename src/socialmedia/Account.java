@@ -1,10 +1,11 @@
 package socialmedia;
 
-public class Account{
+public class Account extends SocialMedia {
     // Private instance variables
     private String handle;
     private String description;
     private int id;
+    private int endorsedPostCount;
 
     public Account(String handle) {
         this.handle = handle;
@@ -21,6 +22,14 @@ public class Account{
 
     public void setAccountID(int id) {
         this.id = id;
+    }
+
+    public void setEndorsedPostCount(int endorsedPostCount) {
+        this.endorsedPostCount = endorsedPostCount;
+    }
+
+    public int getEndorsedPostCount() {
+        return endorsedPostCount;
     }
 
     public String getAccountHandle() {

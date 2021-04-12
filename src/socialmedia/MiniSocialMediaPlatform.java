@@ -20,6 +20,7 @@ public interface MiniSocialMediaPlatform extends Serializable {
 	ArrayList<EndorsePost> endorsePosts = new ArrayList<>();
 	ArrayList<CommentPost> commentPosts = new ArrayList<>();
 	ArrayList<DeletedPost> deletedPosts = new ArrayList<>();
+	ArrayList<Object> toSerialize = new ArrayList<>();
 	
 	// Account-related methods ****************************************
 

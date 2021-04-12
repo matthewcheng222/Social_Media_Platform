@@ -1,6 +1,6 @@
 package socialmedia;
 
-public class EndorsePost {
+public class EndorsePost extends SocialMedia {
     // Private instance variables
     String handle;
     int id;
