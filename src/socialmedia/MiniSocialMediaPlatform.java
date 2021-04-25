@@ -15,12 +15,6 @@ import java.util.ArrayList;
  *
  */
 public interface MiniSocialMediaPlatform extends Serializable {
-	ArrayList<Account> accounts = new ArrayList<>();
-	ArrayList<Post> posts = new ArrayList<>();
-	ArrayList<EndorsePost> endorsePosts = new ArrayList<>();
-	ArrayList<CommentPost> commentPosts = new ArrayList<>();
-	ArrayList<DeletedPost> deletedPosts = new ArrayList<>();
-	ArrayList<Object> toSerialize = new ArrayList<>();
 	
 	// Account-related methods ****************************************
 
